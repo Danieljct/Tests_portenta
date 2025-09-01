@@ -1,40 +1,26 @@
 #include <Arduino.h>
 
-// ===== Configuración de pines =====
-const int potPin = A0;      // Pin del potenciómetro
-const int pwmPin = D6;      // Pin de salida PWM
-const int adcPwmPin = A1;   // Pin para leer la propia PWM
-
-// ===== Configuración de resolución =====
-const int adcResolution = 12;  // Resolución ADC: 12 bits → 0-4095
-const int pwmResolution = 8;   // PWM: 8 bits → 0-255
+const int potPin = A0;       // Potenciómetro
+const int pwmPin = D6;       // Salida PWM
+const int measurePin = A1;   // Pin para medir PWM
 
 void setup() {
-    Serial.begin(115200);
-
-    // Configurar salida PWM
-    pinMode(pwmPin, OUTPUT);
-    analogWriteResolution(pwmResolution);
-
-    // Configurar entradas analógicas
-    analogReadResolution(adcResolution);
-
-    Serial.println("=== PWM controlada por potenciómetro + lectura de señal ===");
+  Serial.begin(2000000); // Velocidad alta
+  analogWriteResolution(12);  // PWM a 12 bits
+  analogReadResolution(12);   // ADC a 12 bits
+  pinMode(pwmPin, OUTPUT);
 }
 
 void loop() {
-    // Leer potenciómetro
-    int potValue = analogRead(potPin);
+  // Leer potenciómetro
+  uint16_t potValue = analogRead(potPin); // 0..4095
 
-    // Mapear potenciómetro → PWM
-    int pwmValue = map(potValue, 0, 4095, 0, 255);
-    analogWrite(pwmPin, pwmValue);
+  // Ajustar PWM según potenciómetro
+  analogWrite(pwmPin, potValue);
 
-    // Medir la propia señal PWM
-    int measuredPWM = analogRead(adcPwmPin);
+  // Medir la propia PWM en A1
+  uint16_t pwmMeasure = analogRead(measurePin);
 
-    // Mostrar sólo la lectura de la señal
-    Serial.println(measuredPWM);
-
-    delay(2);  // Retardo pequeño para refrescar rápido (~500 muestras/s)
+  // Imprimir la lectura
+  Serial.println(pwmMeasure);
 }
