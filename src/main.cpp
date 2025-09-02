@@ -7,6 +7,7 @@
 #define PMIC_SDA_PIN    PB_7  // SDA en PB7
 #define PMIC_SCL_PIN    PB_6  // SCL en PB6
 
+
 // Crear instancia de TwoWire para el bus I2C del PMIC
 TwoWire pmicWire(PMIC_SDA_PIN, PMIC_SCL_PIN);
 
@@ -14,98 +15,42 @@ TwoWire pmicWire(PMIC_SDA_PIN, PMIC_SCL_PIN);
 PF1550_IO_Portenta_H7 pmicIO(&pmicWire, PF1550_I2C_ADDR);
 PF1550 customPMIC(pmicIO);
 
-// Estructura para mapear registros y sus descripciones
-struct RegisterInfo {
-  uint8_t address;
-  const char* name;
-  const char* description;
+// Usar las definiciones de registros de la biblioteca
+const Register criticalRegisters[] = {
+  Register::PMIC_DEVICE_ID,
+  Register::PMIC_SW1_VOLT,
+  Register::PMIC_SW1_CTRL,
+  Register::PMIC_SW2_VOLT,
+  Register::PMIC_SW2_CTRL,
+  Register::PMIC_LDO1_VOLT,
+  Register::PMIC_LDO1_CTRL,
+  Register::PMIC_LDO2_VOLT,
+  Register::PMIC_LDO2_CTRL,
+  Register::PMIC_LDO3_VOLT,
+  Register::PMIC_LDO3_CTRL,
+  Register::CHARGER_CHG_SNS,
+  Register::CHARGER_BATT_SNS,
+  Register::CHARGER_VBUS_SNS
 };
 
-// Mapeo de registros principales del PF1550
-const RegisterInfo registers[] = {
-  {0x00, "DEVICE_ID", "Device ID"},
-  {0x01, "OTP_ID", "OTP ID"},
-  {0x02, "PROG_ID", "Program ID"},
-  {0x03, "INT_CATEGORY", "Interrupt Category"},
-  {0x04, "SW_INT_STAT0", "Switch Interrupt Status 0"},
-  {0x05, "SW_INT_MASK0", "Switch Interrupt Mask 0"},
-  {0x06, "SW_INT_SENSE0", "Switch Interrupt Sense 0"},
-  {0x07, "SW_INT_STAT1", "Switch Interrupt Status 1"},
-  {0x08, "SW_INT_MASK1", "Switch Interrupt Mask 1"},
-  {0x09, "SW_INT_SENSE1", "Switch Interrupt Sense 1"},
-  {0x0A, "LDO_INT_STAT0", "LDO Interrupt Status 0"},
-  {0x0B, "LDO_INT_MASK0", "LDO Interrupt Mask 0"},
-  {0x0C, "LDO_INT_SENSE0", "LDO Interrupt Sense 0"},
-  {0x0D, "TEMP_INT_STAT0", "Temperature Interrupt Status 0"},
-  {0x0E, "TEMP_INT_MASK0", "Temperature Interrupt Mask 0"},
-  {0x0F, "TEMP_INT_SENSE0", "Temperature Interrupt Sense 0"},
-  {0x10, "MISC_INT_STAT0", "Misc Interrupt Status 0"},
-  {0x11, "MISC_INT_MASK0", "Misc Interrupt Mask 0"},
-  {0x12, "MISC_INT_SENSE0", "Misc Interrupt Sense 0"},
-  {0x20, "CHARG_INT_STAT0", "Charger Interrupt Status 0"},
-  {0x21, "CHARG_INT_MASK0", "Charger Interrupt Mask 0"},
-  {0x22, "CHARG_INT_SENSE0", "Charger Interrupt Sense 0"},
-  {0x23, "CHARG_INT_STAT1", "Charger Interrupt Status 1"},
-  {0x24, "CHARG_INT_MASK1", "Charger Interrupt Mask 1"},
-  {0x25, "CHARG_INT_SENSE1", "Charger Interrupt Sense 1"},
-  {0x26, "CHARG_INT_STAT2", "Charger Interrupt Status 2"},
-  {0x27, "CHARG_INT_MASK2", "Charger Interrupt Mask 2"},
-  {0x28, "CHARG_INT_SENSE2", "Charger Interrupt Sense 2"},
-  {0x29, "CHARG_INT_STAT3", "Charger Interrupt Status 3"},
-  {0x2A, "CHARG_INT_MASK3", "Charger Interrupt Mask 3"},
-  {0x2B, "CHARG_INT_SENSE3", "Charger Interrupt Sense 3"},
-  {0x30, "SW1_VOLT", "SW1 Voltage Control"},
-  {0x31, "SW1_STBY_VOLT", "SW1 Standby Voltage"},
-  {0x32, "SW1_SLP_VOLT", "SW1 Sleep Voltage"},
-  {0x33, "SW1_CTRL", "SW1 Control"},
-  {0x34, "SW1_CTRL1", "SW1 Control 1"},
-  {0x35, "SW2_VOLT", "SW2 Voltage Control"},
-  {0x36, "SW2_STBY_VOLT", "SW2 Standby Voltage"},
-  {0x37, "SW2_SLP_VOLT", "SW2 Sleep Voltage"},
-  {0x38, "SW2_CTRL", "SW2 Control"},
-  {0x39, "SW2_CTRL1", "SW2 Control 1"},
-  {0x40, "LDO1_VOLT", "LDO1 Voltage Control"},
-  {0x41, "LDO1_CTRL", "LDO1 Control"},
-  {0x42, "LDO2_VOLT", "LDO2 Voltage Control"},
-  {0x43, "LDO2_CTRL", "LDO2 Control"},
-  {0x44, "LDO3_VOLT", "LDO3 Voltage Control"},
-  {0x45, "LDO3_CTRL", "LDO3 Control"},
-  {0x50, "VSNVS_CTRL", "VSNVS Control"},
-  {0x60, "CHARG_CTRL", "Charger Control"},
-  {0x61, "CHARG_CURR", "Charger Current"},
-  {0x62, "CHARG_EOC_CNFG", "Charger End of Charge Config"},
-  {0x63, "CHARG_CURR_CNFG", "Charger Current Config"},
-  {0x64, "CHARG_TIMER", "Charger Timer"},
-  {0x65, "CHARG_WD_CNFG", "Charger Watchdog Config"},
-  {0x66, "LED_PWM", "LED PWM Control"},
-  {0x67, "CHARG_SNVS_CNFG", "Charger SNVS Config"},
-  {0x68, "CHARG_OP_MODE", "Charger Operation Mode"},
-  {0x69, "BATT_SNVS", "Battery SNVS"},
-  {0x6A, "STARTUP_CTRL", "Startup Control"},
-  {0x6B, "STARTUP_CTRL2", "Startup Control 2"},
-  {0x70, "PWRDN_CTRL", "Power Down Control"},
-  {0x71, "WD_CONFIG", "Watchdog Config"},
-  {0x72, "WD_CLEAR", "Watchdog Clear"},
-  {0x73, "WD_EXPIRE", "Watchdog Expire"},
-  {0x74, "WD_COUNTER", "Watchdog Counter"},
-  {0x75, "PWRDN_TIME", "Power Down Time"},
-  {0x80, "COIN_CTRL", "Coin Cell Control"},
-  {0x81, "PWRON_CTRL", "Power On Control"},
-  {0x88, "WD_SNVS_CONFIG", "Watchdog SNVS Config"},
-  {0x89, "WD_SNVS_CLEAR", "Watchdog SNVS Clear"},
-  {0x8A, "WD_SNVS_EXPIRE", "Watchdog SNVS Expire"},
-  {0x8B, "WD_SNVS_COUNT", "Watchdog SNVS Count"},
-  {0x90, "TEMP_SENS_CNFG", "Temperature Sensor Config"},
-  {0x91, "TEMP_AMB", "Ambient Temperature"},
-  {0x92, "TEMP_BBQ", "BBQ Temperature"},
-  {0x93, "VMAIN_SNS", "VMAIN Sense"},
-  {0x94, "VSNVS_SNS", "VSNVS Sense"},
-  {0x95, "VDD_SNS", "VDD Sense"},
-  {0x96, "VCOIN_SNS", "VCOIN Sense"},
-  {0x97, "VBAT_SNS", "VBAT Sense"}
+const char* criticalRegisterNames[] = {
+  "DEVICE_ID",
+  "SW1_VOLT",
+  "SW1_CTRL", 
+  "SW2_VOLT",
+  "SW2_CTRL",
+  "LDO1_VOLT",
+  "LDO1_CTRL",
+  "LDO2_VOLT", 
+  "LDO2_CTRL",
+  "LDO3_VOLT",
+  "LDO3_CTRL",
+  "CHG_SNS",
+  "BATT_SNS",
+  "VBUS_SNS"
 };
 
-const int NUM_REGISTERS = sizeof(registers) / sizeof(RegisterInfo);
+const int NUM_CRITICAL_REGISTERS = sizeof(criticalRegisters) / sizeof(Register);
 
 
 // Función para interpretar el registro DEVICE_ID
@@ -208,12 +153,26 @@ void performDirectI2CReads() {
   
   usingDirectI2C = true;
   
-  // Leer algunos registros críticos directamente
-  uint8_t criticalRegs[] = {0x00, 0x30, 0x35, 0x40, 0x42, 0x44, 0x33, 0x38, 0x91, 0x92, 0x93, 0x97, 0x20};
-  const char* criticalNames[] = {"DEVICE_ID", "SW1_VOLT", "SW2_VOLT", "LDO1_VOLT", "LDO2_VOLT", "LDO3_VOLT", 
-                                "SW1_CTRL", "SW2_CTRL", "TEMP_AMB", "TEMP_BBQ", "VMAIN_SNS", "VBAT_SNS", "CHARG_STAT"};
+  // Usar registros críticos definidos con la biblioteca
+  uint8_t criticalRegs[] = {
+    static_cast<uint8_t>(Register::PMIC_DEVICE_ID),
+    static_cast<uint8_t>(Register::PMIC_SW1_VOLT),
+    static_cast<uint8_t>(Register::PMIC_SW2_VOLT),
+    static_cast<uint8_t>(Register::PMIC_LDO1_VOLT),
+    static_cast<uint8_t>(Register::PMIC_LDO2_VOLT),
+    static_cast<uint8_t>(Register::PMIC_LDO3_VOLT),
+    static_cast<uint8_t>(Register::PMIC_SW1_CTRL),
+    static_cast<uint8_t>(Register::PMIC_SW2_CTRL),
+    static_cast<uint8_t>(Register::CHARGER_BATT_SNS),
+    static_cast<uint8_t>(Register::CHARGER_CHG_SNS)
+  };
   
-  for (int i = 0; i < 13; i++) {
+  const char* criticalNames[] = {
+    "DEVICE_ID", "SW1_VOLT", "SW2_VOLT", "LDO1_VOLT", "LDO2_VOLT", 
+    "LDO3_VOLT", "SW1_CTRL", "SW2_CTRL", "BATT_SNS", "CHG_SNS"
+  };
+  
+  for (int i = 0; i < 10; i++) {
     uint8_t value = readPMICRegisterDirect(criticalRegs[i]);
     
     Serial.print("[0x");
@@ -228,33 +187,15 @@ void performDirectI2CReads() {
     Serial.print(value);
     Serial.println(")");
     
-    // Interpretación básica
-    if (criticalRegs[i] == 0x00) {
-      Serial.print("  Device ID: ");
-      if (value == 0x7C) Serial.println("PF1550 ✓");
-      else if (value == 0x10) Serial.println("PF1550 (ID alternativo) ✓");
-      else if (value == 0xFF) Serial.println("Error de lectura");
-      else Serial.println("ID desconocido");
+    // Interpretación usando las funciones existentes
+    if (criticalRegs[i] == static_cast<uint8_t>(Register::PMIC_DEVICE_ID)) {
+      interpretDeviceId(value);
     }
-    else if (criticalRegs[i] == 0x91 || criticalRegs[i] == 0x92) { // Temperaturas
-      Serial.print("  Temperatura: ");
-      if (value == 0x00) {
-        Serial.println("Sensor no habilitado o sin batería");
-      } else if (value == 0xFF) {
-        Serial.println("Error de lectura");
-      } else {
-        int temp = (int)value - 40;
-        Serial.print(temp); Serial.println("°C");
-      }
+    else if (strstr(criticalNames[i], "VOLT")) {
+      interpretVoltageRegister(criticalNames[i], value);
     }
-    else if (criticalRegs[i] == 0x97) { // VBAT
-      Serial.print("  VBAT: ");
-      if (value == 0x00) {
-        Serial.println("Sin batería detectada");
-      } else {
-        float voltage = value * 0.025;
-        Serial.print(voltage, 3); Serial.println(" V");
-      }
+    else if (strstr(criticalNames[i], "CTRL")) {
+      interpretControlRegister(criticalNames[i], value);
     }
     
     delay(10);
@@ -265,6 +206,7 @@ void performDirectI2CReads() {
 
 
 void setup() {
+  bootM4();
   Serial.begin(115200);
   while (!Serial);
 
@@ -445,20 +387,25 @@ void setup() {
   readAndDisplayAllRegisters();
 }
 
-// Función principal para leer y mostrar todos los registros
-void readAndDisplayAllRegisters() {
-  Serial.println("\n=== LECTURA COMPLETA DE REGISTROS PF1550 (PMIC PERSONALIZADO) ===\n");
+// Función principal para leer registros usando la biblioteca
+void readAndDisplayCriticalRegisters() {
+  Serial.println("\n=== LECTURA DE REGISTROS CRÍTICOS PF1550 ===\n");
   
-  for (int i = 0; i < NUM_REGISTERS; i++) {
-    uint8_t value = customPMIC.readPMICreg((Register)registers[i].address);
+  for (int i = 0; i < NUM_CRITICAL_REGISTERS; i++) {
+    uint8_t value;
+    
+    if (usingCustomPMIC) {
+      value = customPMIC.readPMICreg(criticalRegisters[i]);
+    } else {
+      value = PMIC.readPMICreg(criticalRegisters[i]);
+    }
     
     Serial.print("[0x"); 
-    if (registers[i].address < 0x10) Serial.print("0");
-    Serial.print(registers[i].address, HEX);
+    uint8_t regAddr = static_cast<uint8_t>(criticalRegisters[i]);
+    if (regAddr < 0x10) Serial.print("0");
+    Serial.print(regAddr, HEX);
     Serial.print("] ");
-    Serial.print(registers[i].name);
-    Serial.print(" - ");
-    Serial.print(registers[i].description);
+    Serial.print(criticalRegisterNames[i]);
     Serial.print(": 0x");
     if (value < 0x10) Serial.print("0");
     Serial.print(value, HEX);
@@ -467,27 +414,18 @@ void readAndDisplayAllRegisters() {
     Serial.println(")");
     
     // Interpretación específica según el registro
-    if (registers[i].address == 0x00) {
+    if (criticalRegisters[i] == Register::PMIC_DEVICE_ID) {
       interpretDeviceId(value);
     }
-    else if (strstr(registers[i].name, "VOLT")) {
-      interpretVoltageRegister(registers[i].name, value);
+    else if (strstr(criticalRegisterNames[i], "VOLT")) {
+      interpretVoltageRegister(criticalRegisterNames[i], value);
     }
-    else if (strstr(registers[i].name, "CTRL")) {
-      interpretControlRegister(registers[i].name, value);
-    }
-    else if (strstr(registers[i].name, "CHARG") && strstr(registers[i].name, "STAT")) {
-      interpretChargerStatus(value);
-    }
-    else if (strstr(registers[i].name, "TEMP")) {
-      interpretTemperature(registers[i].name, value);
-    }
-    else if (strstr(registers[i].name, "_SNS")) {
-      interpretSensorVoltage(registers[i].name, value);
+    else if (strstr(criticalRegisterNames[i], "CTRL")) {
+      interpretControlRegister(criticalRegisterNames[i], value);
     }
     
     Serial.println();
-    delay(10); // Pequeña pausa entre lecturas
+    delay(10);
   }
 }
 
@@ -495,16 +433,16 @@ void readAndDisplayAllRegisters() {
 void readAndDisplayAllRegistersDefault() {
   Serial.println("\n=== LECTURA COMPLETA DE REGISTROS PF1550 (PMIC PREDETERMINADO) ===\n");
   
-  for (int i = 0; i < NUM_REGISTERS; i++) {
-    uint8_t value = PMIC.readPMICreg((Register)registers[i].address);
+  for (int i = 0; i < NUM_CRITICAL_REGISTERS; i++) {
+    uint8_t value = PMIC.readPMICreg(criticalRegisters[i]);
     
     Serial.print("[0x"); 
-    if (registers[i].address < 0x10) Serial.print("0");
-    Serial.print(registers[i].address, HEX);
+    if (criticalRegisters[i] < 0x10) Serial.print("0");
+    Serial.print(criticalRegisters[i], HEX);
     Serial.print("] ");
-    Serial.print(registers[i].name);
+    Serial.print(criticalRegisterNames[i]);
     Serial.print(" - ");
-    Serial.print(registers[i].description);
+    Serial.print(criticalRegisterNames[i]);
     Serial.print(": 0x");
     if (value < 0x10) Serial.print("0");
     Serial.print(value, HEX);
@@ -513,23 +451,23 @@ void readAndDisplayAllRegistersDefault() {
     Serial.println(")");
     
     // Interpretación específica según el registro
-    if (registers[i].address == 0x00) {
+    if (criticalRegisters[i] == Register::PMIC_DEVICE_ID) {
       interpretDeviceId(value);
     }
-    else if (strstr(registers[i].name, "VOLT")) {
-      interpretVoltageRegister(registers[i].name, value);
+    else if (strstr(criticalRegisterNames[i], "VOLT")) {
+      interpretVoltageRegister(criticalRegisterNames[i], value);
     }
-    else if (strstr(registers[i].name, "CTRL")) {
-      interpretControlRegister(registers[i].name, value);
+    else if (strstr(criticalRegisterNames[i], "CTRL")) {
+      interpretControlRegister(criticalRegisterNames[i], value);
     }
-    else if (strstr(registers[i].name, "CHARG") && strstr(registers[i].name, "STAT")) {
+    else if (strstr(criticalRegisterNames[i], "CHARG") && strstr(criticalRegisterNames[i], "STAT")) {
       interpretChargerStatus(value);
     }
-    else if (strstr(registers[i].name, "TEMP")) {
-      interpretTemperature(registers[i].name, value);
+    else if (strstr(criticalRegisterNames[i], "TEMP")) {
+      interpretTemperature(criticalRegisterNames[i], value);
     }
-    else if (strstr(registers[i].name, "_SNS")) {
-      interpretSensorVoltage(registers[i].name, value);
+    else if (strstr(criticalRegisterNames[i], "_SNS")) {
+      interpretSensorVoltage(criticalRegisterNames[i], value);
     }
     
     Serial.println();
@@ -537,29 +475,93 @@ void readAndDisplayAllRegistersDefault() {
   }
 }
 
-// Función para monitoreo en tiempo real de registros críticos
+// Función para monitoreo en tiempo real usando registros de la biblioteca
 void monitorCriticalRegisters() {
-  Serial.println("=== MONITOREO EN TIEMPO REAL (PMIC PERSONALIZADO) ===");
+  Serial.println("=== MONITOREO EN TIEMPO REAL ===");
   
-  // Voltajes principales
-  uint8_t sw1_volt = customPMIC.readPMICreg((Register)0x30);
-  uint8_t sw2_volt = customPMIC.readPMICreg((Register)0x35);
-  uint8_t ldo1_volt = customPMIC.readPMICreg((Register)0x40);
-  uint8_t ldo2_volt = customPMIC.readPMICreg((Register)0x42);
-  uint8_t ldo3_volt = customPMIC.readPMICreg((Register)0x44);
+  uint8_t sw1_volt, sw2_volt, sw1_ctrl, sw2_ctrl, vbat, charg_stat;
   
-  // Estados de control
-  uint8_t sw1_ctrl = customPMIC.readPMICreg((Register)0x33);
-  uint8_t sw2_ctrl = customPMIC.readPMICreg((Register)0x38);
+  if (usingCustomPMIC) {
+    sw1_volt = customPMIC.readPMICreg(Register::PMIC_SW1_VOLT);
+    sw2_volt = customPMIC.readPMICreg(Register::PMIC_SW2_VOLT);
+    sw1_ctrl = customPMIC.readPMICreg(Register::PMIC_SW1_CTRL);
+    sw2_ctrl = customPMIC.readPMICreg(Register::PMIC_SW2_CTRL);
+    vbat = customPMIC.readPMICreg(Register::CHARGER_BATT_SNS);
+    charg_stat = customPMIC.readPMICreg(Register::CHARGER_CHG_SNS);
+  } else {
+    sw1_volt = PMIC.readPMICreg(Register::PMIC_SW1_VOLT);
+    sw2_volt = PMIC.readPMICreg(Register::PMIC_SW2_VOLT);
+    sw1_ctrl = PMIC.readPMICreg(Register::PMIC_SW1_CTRL);
+    sw2_ctrl = PMIC.readPMICreg(Register::PMIC_SW2_CTRL);
+    vbat = PMIC.readPMICreg(Register::CHARGER_BATT_SNS);
+    charg_stat = PMIC.readPMICreg(Register::CHARGER_CHG_SNS);
+  }
   
-  // Temperaturas
-  uint8_t temp_amb = customPMIC.readPMICreg((Register)0x91);
-  uint8_t temp_bbq = customPMIC.readPMICreg((Register)0x92);
+  Serial.print("SW1: "); Serial.print((0.4 + (sw1_volt & 0x3F) * 0.025), 3); Serial.print("V ");
+  Serial.print("(EN:"); Serial.print((sw1_ctrl & 0x01) ? "Y" : "N"); Serial.print(") | ");
   
-  // Voltajes de sensores
-  uint8_t vmain = customPMIC.readPMICreg((Register)0x93);
-  uint8_t vbat = customPMIC.readPMICreg((Register)0x97);
+  Serial.print("SW2: "); Serial.print((0.4 + (sw2_volt & 0x3F) * 0.025), 3); Serial.print("V ");
+  Serial.print("(EN:"); Serial.print((sw2_ctrl & 0x01) ? "Y" : "N"); Serial.print(") | ");
   
+  Serial.print("VBAT: "); Serial.print(vbat * 0.025, 3); Serial.print("V | ");
+  Serial.print("CHG: 0x"); Serial.println(charg_stat, HEX);
+}
+
+
+void loop() {
+  static unsigned long lastFullScan = 0;
+  static unsigned long lastMonitor = 0;
+  
+  unsigned long now = millis();
+  
+  // Si estamos usando lecturas directas I2C, hacer monitoreo simple
+  if (usingDirectI2C) {
+    if (now - lastMonitor >= 5000) { // Cada 5 segundos
+      Serial.println("\n=== MONITOREO DIRECTO I2C ===");
+      
+      uint8_t deviceId = readPMICRegisterDirect(0x00);
+      uint8_t sw1_volt = readPMICRegisterDirect(0x30);
+      uint8_t sw2_volt = readPMICRegisterDirect(0x35);
+      uint8_t vbat = readPMICRegisterDirect(0x97);
+      uint8_t temp = readPMICRegisterDirect(0x91);
+      
+      Serial.print("ID: 0x"); Serial.print(deviceId, HEX);
+      Serial.print(" | SW1: "); Serial.print((0.4 + (sw1_volt & 0x3F) * 0.025), 3); Serial.print("V");
+      Serial.print(" | SW2: "); Serial.print((0.4 + (sw2_volt & 0x3F) * 0.025), 3); Serial.print("V");
+      
+      if (vbat == 0x00) {
+        Serial.print(" | VBAT: Sin batería");
+      } else {
+        Serial.print(" | VBAT: "); Serial.print(vbat * 0.025, 3); Serial.print("V");
+      }
+      
+      if (temp == 0x00) {
+        Serial.println(" | Temp: Sensor deshabilitado");
+      } else {
+        Serial.print(" | Temp: "); Serial.print((int)temp - 40); Serial.println("°C");
+      }
+      
+      lastMonitor = now;
+    }
+    return;
+  }
+  
+  // Comportamiento normal para PMIC inicializado
+  // Escaneo completo cada 30 segundos
+  if (now - lastFullScan >= 30000) {
+    readAndDisplayCriticalRegisters();
+    lastFullScan = now;
+    Serial.println("=====================================\n");
+  }
+  
+  // Monitoreo rápido cada 2 segundos
+  if (now - lastMonitor >= 2000) {
+    monitorCriticalRegisters();
+    lastMonitor = now;
+  }
+  
+  delay(100);
+}
   // Estado del cargador
   uint8_t charg_stat = customPMIC.readPMICreg((Register)0x20);
   
