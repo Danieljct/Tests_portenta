@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-#define LED_PIN LED_BUILTIN
+#define LED_PIN LEDR
 
 void setup() {
   pinMode(LED_PIN, OUTPUT);
