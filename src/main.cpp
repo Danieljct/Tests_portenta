@@ -437,8 +437,8 @@ void readAndDisplayAllRegistersDefault() {
     uint8_t value = PMIC.readPMICreg(criticalRegisters[i]);
     
     Serial.print("[0x"); 
-    if (criticalRegisters[i] < 0x10) Serial.print("0");
-    Serial.print(criticalRegisters[i], HEX);
+    if (static_cast<uint8_t>(criticalRegisters[i]) < 0x10) Serial.print("0");
+    Serial.print(static_cast<uint8_t>(criticalRegisters[i]), HEX);
     Serial.print("] ");
     Serial.print(criticalRegisterNames[i]);
     Serial.print(" - ");
@@ -562,123 +562,5 @@ void loop() {
   
   delay(100);
 }
-  // Estado del cargador
-  uint8_t charg_stat = customPMIC.readPMICreg((Register)0x20);
-  
-  Serial.print("SW1: "); Serial.print((0.4 + (sw1_volt & 0x3F) * 0.025), 3); Serial.print("V ");
-  Serial.print("(EN:"); Serial.print((sw1_ctrl & 0x01) ? "Y" : "N"); Serial.print(") | ");
-  
-  Serial.print("SW2: "); Serial.print((0.4 + (sw2_volt & 0x3F) * 0.025), 3); Serial.print("V ");
-  Serial.print("(EN:"); Serial.print((sw2_ctrl & 0x01) ? "Y" : "N"); Serial.print(") | ");
-  
-  Serial.print("VBAT: "); Serial.print(vbat * 0.025, 3); Serial.print("V | ");
-  Serial.print("VMAIN: "); Serial.print(vmain * 0.025, 3); Serial.print("V | ");
-  
-  Serial.print("Temp: "); Serial.print((int)temp_amb - 40); Serial.print("°C | ");
-  
-  Serial.print("CHG: 0x"); Serial.println(charg_stat, HEX);
-}
-
-// Función de monitoreo usando el PMIC predeterminado
-void monitorCriticalRegistersDefault() {
-  Serial.println("=== MONITOREO EN TIEMPO REAL (PMIC PREDETERMINADO) ===");
-  
-  // Voltajes principales
-  uint8_t sw1_volt = PMIC.readPMICreg((Register)0x30);
-  uint8_t sw2_volt = PMIC.readPMICreg((Register)0x35);
-  uint8_t ldo1_volt = PMIC.readPMICreg((Register)0x40);
-  uint8_t ldo2_volt = PMIC.readPMICreg((Register)0x42);
-  uint8_t ldo3_volt = PMIC.readPMICreg((Register)0x44);
-  
-  // Estados de control
-  uint8_t sw1_ctrl = PMIC.readPMICreg((Register)0x33);
-  uint8_t sw2_ctrl = PMIC.readPMICreg((Register)0x38);
-  
-  // Temperaturas
-  uint8_t temp_amb = PMIC.readPMICreg((Register)0x91);
-  uint8_t temp_bbq = PMIC.readPMICreg((Register)0x92);
-  
-  // Voltajes de sensores
-  uint8_t vmain = PMIC.readPMICreg((Register)0x93);
-  uint8_t vbat = PMIC.readPMICreg((Register)0x97);
-  
-  // Estado del cargador
-  uint8_t charg_stat = PMIC.readPMICreg((Register)0x20);
-  
-  Serial.print("SW1: "); Serial.print((0.4 + (sw1_volt & 0x3F) * 0.025), 3); Serial.print("V ");
-  Serial.print("(EN:"); Serial.print((sw1_ctrl & 0x01) ? "Y" : "N"); Serial.print(") | ");
-  
-  Serial.print("SW2: "); Serial.print((0.4 + (sw2_volt & 0x3F) * 0.025), 3); Serial.print("V ");
-  Serial.print("(EN:"); Serial.print((sw2_ctrl & 0x01) ? "Y" : "N"); Serial.print(") | ");
-  
-  Serial.print("VBAT: "); Serial.print(vbat * 0.025, 3); Serial.print("V | ");
-  Serial.print("VMAIN: "); Serial.print(vmain * 0.025, 3); Serial.print("V | ");
-  
-  Serial.print("Temp: "); Serial.print((int)temp_amb - 40); Serial.print("°C | ");
-  
-  Serial.print("CHG: 0x"); Serial.println(charg_stat, HEX);
-}
 
 
-void loop() {
-  static unsigned long lastFullScan = 0;
-  static unsigned long lastMonitor = 0;
-  
-  unsigned long now = millis();
-  
-  // Si estamos usando lecturas directas I2C, hacer monitoreo simple
-  if (usingDirectI2C) {
-    if (now - lastMonitor >= 5000) { // Cada 5 segundos
-      Serial.println("\n=== MONITOREO DIRECTO I2C ===");
-      
-      uint8_t deviceId = readPMICRegisterDirect(0x00);
-      uint8_t sw1_volt = readPMICRegisterDirect(0x30);
-      uint8_t sw2_volt = readPMICRegisterDirect(0x35);
-      uint8_t vbat = readPMICRegisterDirect(0x97);
-      uint8_t temp = readPMICRegisterDirect(0x91);
-      
-      Serial.print("ID: 0x"); Serial.print(deviceId, HEX);
-      Serial.print(" | SW1: "); Serial.print((0.4 + (sw1_volt & 0x3F) * 0.025), 3); Serial.print("V");
-      Serial.print(" | SW2: "); Serial.print((0.4 + (sw2_volt & 0x3F) * 0.025), 3); Serial.print("V");
-      
-      if (vbat == 0x00) {
-        Serial.print(" | VBAT: Sin batería");
-      } else {
-        Serial.print(" | VBAT: "); Serial.print(vbat * 0.025, 3); Serial.print("V");
-      }
-      
-      if (temp == 0x00) {
-        Serial.println(" | Temp: Sensor deshabilitado");
-      } else {
-        Serial.print(" | Temp: "); Serial.print((int)temp - 40); Serial.println("°C");
-      }
-      
-      lastMonitor = now;
-    }
-    return;
-  }
-  
-  // Comportamiento normal para PMIC inicializado
-  // Escaneo completo cada 30 segundos
-  if (now - lastFullScan >= 30000) {
-    if (usingCustomPMIC) {
-      readAndDisplayAllRegisters();
-    } else {
-      readAndDisplayAllRegistersDefault();
-    }
-    lastFullScan = now;
-    Serial.println("=====================================\n");
-  }
-  
-  // Monitoreo rápido cada 2 segundos
-  if (now - lastMonitor >= 2000) {
-    if (usingCustomPMIC) {
-      monitorCriticalRegisters();
-    } else {
-      monitorCriticalRegistersDefault();
-    }
-    lastMonitor = now;
-  }
-  
-  delay(100);
-}
