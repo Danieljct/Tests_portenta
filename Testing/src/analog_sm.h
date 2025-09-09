@@ -1,6 +1,5 @@
 #pragma once
 
-// ** Cambia estos valores según tu sensor **
 const float SM_P_MIN = -500.0; // Presión mínima en mbar
 const float SM_P_MAX = 500.0;  // Presión máxima en mbar
 const float VDD = 3.3;         // Voltaje de alimentación del sensor (3V o 5V)
