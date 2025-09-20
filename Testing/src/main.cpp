@@ -1,101 +1,79 @@
-#include <WiFi.h>
-#include "arduino_secrets.h"
+/*
+  WiFi Web Server LED Control - Portenta H7 Client Mode
+  
+  Este código convierte el Portenta H7 en un cliente WiFi que se conecta a una red existente.
+  Permite controlar los LEDs RGB a través de una interfaz web.
+  
+  Circuit:
+  * Arduino Portenta H7
+  * LEDs RGB integrados en la placa
+*/
 
-///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = SECRET_SSID;    // your network SSID (name)
-char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
-int keyIndex = 0;             // your network key Index number (needed only for WEP)
+#include <WiFi.h>
+#include "arduino_secrets.h" 
+
+char ssid[] = SECRET_SSID;        // nombre de la red WiFi
+char pass[] = SECRET_PASS;        // contraseña de la red WiFi
 
 int status = WL_IDLE_STATUS;
-
 WiFiServer server(80);
-
+void printWifiStatus();
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
+  Serial.begin(9600);      // inicializar comunicación serial
   
-  Serial.println("Access Point Web Server");
+  // Configurar los LEDs del Portenta H7
+  pinMode(LEDR, OUTPUT);
+  pinMode(LEDG, OUTPUT);
+  pinMode(LEDB, OUTPUT);
+  
+  // Inicialmente apagar todos los LEDs (lógica invertida en Portenta)
+  digitalWrite(LEDR, HIGH);
+  digitalWrite(LEDG, HIGH);
+  digitalWrite(LEDB, HIGH);
 
-  pinMode(LEDR,OUTPUT);
-  pinMode(LEDG,OUTPUT);
-  pinMode(LEDB,OUTPUT); 
-
-  // by default the local IP address of will be 192.168.3.1
-  // you can override it with the following:
-  // WiFi.config(IPAddress(10, 0, 0, 1));
-
-  if(strlen(pass) < 8){    
-    Serial.println("Creating access point failed");
-    Serial.println("The Wi-Fi password must be at least 8 characters long");
-    // don't continue
-    while(true);
-  }
-    
-  // print the network name (SSID);
-  Serial.print("Creating access point named: ");
-  Serial.println(ssid);
-
-  //Create the Access point
-  status = WiFi.beginAP(ssid,pass);
-  if(status != WL_AP_LISTENING){
-    Serial.println("Creating access point failed");
-    // don't continue
+  // Verificar el módulo WiFi
+  if (WiFi.status() == WL_NO_MODULE) {
+    Serial.println("Communication with WiFi module failed!");
     while (true);
   }
 
-  // wait 10 seconds for connection:
-  delay(10000);
-
-  // start the web server on port 80
+  // Intentar conectarse a la red WiFi
+  while (status != WL_CONNECTED) {
+    Serial.print("Attempting to connect to Network named: ");
+    Serial.println(ssid);
+    status = WiFi.begin(ssid, pass);
+    delay(3000);
+  }
+  // Una vez conectado, iniciar el servidor web
   server.begin();
-
-  // you're connected now, so print out the status
-  printWiFiStatus();
   
+  // Imprimir información de la conexión WiFi
+  printWifiStatus();
 }
 
 void loop() {
+  WiFiClient client = server.available();   // escuchar clientes entrantes
 
- // compare the previous status to the current status
-  if (status != WiFi.status()) {
-    // it has changed update the variable
-    status = WiFi.status();
-
-    if (status == WL_AP_CONNECTED) {
-      // a device has connected to the AP
-      Serial.println("Device connected to AP");
-    } else {
-      // a device has disconnected from the AP, and we are back in listening mode
-      Serial.println("Device disconnected from AP");
-    }
-  }
-
-  WiFiClient client = server.available();   // listen for incoming clients
-
-  if (client) {                             // if you get a client,
-    Serial.println("new client");           // print a message out the serial port
-    String currentLine = "";                // make a String to hold incoming data from the client
-  
-    while (client.connected()) {            // loop while the client's connected
-     
-      if (client.available()) {             // if there's bytes to read from the client,
-        char c = client.read();             // read a byte, then
-        Serial.write(c);                    // print it out the serial monitor
-        if (c == '\n') {                    // if the byte is a newline character
-
-          // if the current line is blank, you got two newline characters in a row.
-          // that's the end of the client HTTP request, so send a response:
+  if (client) {                             // si hay un cliente,
+    Serial.println("new client");           // imprimir mensaje en el puerto serie
+    String currentLine = "";                // crear cadena para guardar datos del cliente
+    
+    while (client.connected()) {            // bucle mientras el cliente está conectado
+      if (client.available()) {             // si hay bytes para leer del cliente,
+        char c = client.read();             // leer un byte
+        Serial.write(c);                    // imprimir en el monitor serie
+        
+        if (c == '\n') {                    // si el byte es un carácter de nueva línea
+          // si la línea actual está vacía, tienes dos caracteres de nueva línea seguidos.
+          // ese es el final de la solicitud HTTP del cliente, así que envía una respuesta:
           if (currentLine.length() == 0) {
-            // HTTP headers always start with a response code (e.g. HTTP/1.1 200 OK)
-            // and a content-type so the client knows what's coming, then a blank line:
+            // Las cabeceras HTTP siempre comienzan con un código de respuesta (ej. HTTP/1.1 200 OK)
+            // y un tipo de contenido para que el cliente sepa qué viene, luego una línea en blanco:
             client.println("HTTP/1.1 200 OK");
             client.println("Content-type:text/html");
             client.println();
 
-            // the content of the HTTP response follows the header:
+            // El contenido de la respuesta HTTP sigue a la cabecera:
             client.print("<html><head>");
             client.print("<style>");
             client.print("* { font-family: sans-serif;}");
@@ -111,57 +89,61 @@ void loop() {
             client.print("<a href=\"/Hb\">ON</a> <a href=\"/Lb\">OFF</a>");
             client.print("</body></html>");
 
-            // The HTTP response ends with another blank line:
+            // La respuesta HTTP termina con otra línea en blanco:
             client.println();
-            // break out of the while loop:
+            // salir del bucle while:
             break;
-          } else {      // if you got a newline, then clear currentLine:
+          } else {    // si tienes una nueva línea, limpia currentLine:
             currentLine = "";
           }
-        } else if (c != '\r') {    // if you got anything else but a carriage return character,
-          currentLine += c;      // add it to the end of the currentLine
+        } else if (c != '\r') {  // si tienes cualquier cosa menos un retorno de carro,
+          currentLine += c;      // añádelo al final de currentLine
         }
 
-        // Check to see if the client request was "GET /H" or "GET /L":
+        // Comprobar si la solicitud del cliente fue para controlar los LEDs:
         if (currentLine.endsWith("GET /Hr")) {
-          digitalWrite(LEDR, LOW);               // GET /Hr turns the Red LED on
+          digitalWrite(LEDR, LOW);               // Encender LED rojo (LOW = encendido en Portenta)
         }
         if (currentLine.endsWith("GET /Lr")) {
-          digitalWrite(LEDR, HIGH);                // GET /Lr turns the Red LED off
+          digitalWrite(LEDR, HIGH);              // Apagar LED rojo (HIGH = apagado en Portenta)
         }
-        if (currentLine.endsWith("GET /Hg")){
-          digitalWrite(LEDG, LOW);                // GET /Hg turns the Green LED on
+        if (currentLine.endsWith("GET /Hg")) {
+          digitalWrite(LEDG, LOW);               // Encender LED verde
         }
-        if (currentLine.endsWith("GET /Lg")){
-          digitalWrite(LEDG, HIGH);                // GET /Hg turns the Green LED on
+        if (currentLine.endsWith("GET /Lg")) {
+          digitalWrite(LEDG, HIGH);              // Apagar LED verde
         }
-        if (currentLine.endsWith("GET /Hb")){
-          digitalWrite(LEDB, LOW);                // GET /Hg turns the Green LED on
+        if (currentLine.endsWith("GET /Hb")) {
+          digitalWrite(LEDB, LOW);               // Encender LED azul
         }
-        if (currentLine.endsWith("GET /Lb")){
-          digitalWrite(LEDB, HIGH);                // GET /Hg turns the Green LED on
-        } 
-        
+        if (currentLine.endsWith("GET /Lb")) {
+          digitalWrite(LEDB, HIGH);              // Apagar LED azul
+        }
       }
     }
-    // close the connection:
+    // cerrar la conexión:
     client.stop();
     Serial.println("client disconnected");
   }
-  
 }
 
-void printWiFiStatus() {
-  // print the SSID of the network you're attached to:
+void printWifiStatus() {
+  // imprimir el SSID de la red:
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
 
-  // print your Wi-Fi shield's IP address:
+  // imprimir la dirección IP de tu placa:
   IPAddress ip = WiFi.localIP();
   Serial.print("IP Address: ");
   Serial.println(ip);
 
-  // print where to go in a browser:
+  // imprimir la intensidad de la señal:
+  long rssi = WiFi.RSSI();
+  Serial.print("signal strength (RSSI):");
+  Serial.print(rssi);
+  Serial.println(" dBm");
+  
+  // imprimir dónde ir en un navegador:
   Serial.print("To see this page in action, open a browser to http://");
   Serial.println(ip);
 }
