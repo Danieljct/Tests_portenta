@@ -1,0 +1,56 @@
+SSCDANN600MDSA3-ND	
+1: 	GND
+2:	Vsupply
+3:	Miso
+4:	sclk
+5:	ss
+Funciona por SPI: Estandoar de honeywell
+(no me ha funcionado)
+
+
+ELVH-015D-HAND-C-P2A4
+va de -103 a 103 kpa
+
+Funciona por i2c address 0x28
+1	: 	GND
+2 	:	VS
+3 	:	SDA		pull up de 1k
+4 	: 	SCL		pull up de 1k
+(funcionando)
+
+
+SM4291-HGE-S-500-000
+
+pin 1 es el de arriba a la izquieda poniendo la entrada de presion hacia abajo
+1:	NC
+2:	SCL		4.7k pull up
+3: 	SDA		4.7k pull up
+4-6:NC
+7:	GND			(está en el pin 5 del breakout)
+8: 	NC
+9: 	An out
+10:	power
+(funcionó) Analogo e i2c direccion 0x6D
+
+
+2SMPP-02
+
+pin 1 arriba a la izq:
+1: vout + 
+2: NC		En el breakout está este como GND y el 3 NC
+3: GND
+4: Vout -
+5: N-sub
+6: Icc
+(funciona?) voltajes muy chicos
+
+2SMPP-03
+
+pin 1 arriba a la izq:
+1: vout + 
+2: NC		En el breakout está este como GND y el 3 NC
+3: GND
+4: Vout -
+5: N-sub
+6: Icc
+funciona como el de arriba, esto es tema de hardware, al final es solo un voltaje analogo
