@@ -39,7 +39,7 @@ inline void sensorELV_scan() {
     Serial.println("Escaneo I2C3 finalizado.");
 }
 
-inline void sensorELV_read(bool crudo = false) {
+inline float sensorELV_read(bool crudo = false) {
     dev_i2c.requestFrom(SENSOR_I2C_ADDR, 4);
     if (dev_i2c.available() == 4) {
         for (int i = 0; i < 4; i++) {
@@ -73,8 +73,11 @@ inline void sensorELV_read(bool crudo = false) {
             Serial.print(" | Temperatura: ");
             Serial.print(temperature_c, 2);
             Serial.println(" C");
+            return pressure_mbar;
         }
     } else {
         Serial.println("No se recibieron 4 bytes del sensor I2C.");
+        return NAN;
     }
+
 }

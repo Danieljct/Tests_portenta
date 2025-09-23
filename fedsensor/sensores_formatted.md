@@ -5,10 +5,10 @@
 | Sensor | Estado | Protocolo | Rango de Presión | Temperatura | Resolución | Precisión | Frecuencia |
 |--------|--------|-----------|------------------|-------------|------------|-----------|------------|
 | **SSCDANN600MDSA3-ND** | ✅ | SPI | ±60 kPa | -20 a 85°C | 12 bits | ±2% FS | ~2.17 kHz |
-| **ELVH-015D-HAND-C-P2A4** | ✅ | I2C (0x28) | -103 a 103 kPa | 0 a 50°C | 14 bits | ±0.5% FS | ~2.17 kHz |
+| **ELVH-015D-HAND-C-P2A4** | ✅ | I2C (0x28) | ±103 kPa | 0 a 50°C | 14 bits | ±0.5% FS | ~2.17 kHz |
 | **SM4291-HGE-S-500-000** | ✅ | I2C (0x6D) + Analógico | 0 a 172 kPa | -20 a 85°C | 16 bits (I2C) | ±1% FS (A) / ±1.5% FS (D) | 2 kHz |
 | **2SMPP-02** | ⚠️ | Analógico | 0 a 37 kPa | 0 a 50°C | Analógico | 0.8% FS | N/A |
-| **2SMPP-03** | ⚠️ | Analógico | -50 a 50 kPa | 0 a 85°C | Analógico | ±0.8% FS | N/A |
+| **2SMPP-03** | ⚠️ | Analógico | ±50 kPa | 0 a 85°C | Analógico | ±0.8% FS | N/A |
 
 **Leyenda:**
 - ✅ **Funcionando:** Sensor probado y operativo
