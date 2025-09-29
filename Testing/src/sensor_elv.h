@@ -39,7 +39,12 @@ inline void sensorELV_scan() {
     Serial.println("Escaneo I2C3 finalizado.");
 }
 
-inline float sensorELV_read(bool crudo = false) {
+// Convierte un valor raw de presión a presión en bares
+inline float pressure_raw_to_pressure_mbar(int pressure_raw) {
+    return ((float)pressure_raw - OUTPUT_MIN) * (P_MAX - P_MIN) / (OUTPUT_MAX - OUTPUT_MIN) + P_MIN;
+}
+
+inline int sensorELV_read(bool print = false, bool crudo = false) {
     dev_i2c.requestFrom(SENSOR_I2C_ADDR, 4);
     if (dev_i2c.available() == 4) {
         for (int i = 0; i < 4; i++) {
@@ -60,8 +65,9 @@ inline float sensorELV_read(bool crudo = false) {
             status = (sensorData[0] >> 6) & 0b11;
             pressure_raw = ((sensorData[0] & 0x3F) << 8) | sensorData[1];
             temperature_raw = ((sensorData[2] << 3) | (sensorData[3] >> 5));
-            float pressure_mbar = ((float)pressure_raw - OUTPUT_MIN) * (P_MAX - P_MIN) / (OUTPUT_MAX - OUTPUT_MIN) + P_MIN;
+            float pressure_mbar = pressure_raw_to_pressure_mbar(pressure_raw);
             float temperature_c = ((float)temperature_raw / 2047.0) * (T_MAX - T_MIN) + T_MIN;
+            if(print){
             Serial.print("Estado: ");
             Serial.print(status);
             Serial.print(" | Presion Raw: ");
@@ -73,7 +79,8 @@ inline float sensorELV_read(bool crudo = false) {
             Serial.print(" | Temperatura: ");
             Serial.print(temperature_c, 2);
             Serial.println(" C");
-            return pressure_mbar;
+            }
+            return pressure_raw;
         }
     } else {
         Serial.println("No se recibieron 4 bytes del sensor I2C.");

@@ -2,14 +2,14 @@
 
 
 void setup() {
-    pinMode(LEDB, OUTPUT);
-    digitalWrite(LEDB, HIGH);
+  //  pinMode(LEDB, OUTPUT);
+//    digitalWrite(LEDB, HIGH);
 }
 
 bool ledState = false;
 void loop() {
-        ledState = !ledState;
-    digitalWrite(LEDB, ledState ? HIGH : LOW);
+    //    ledState = !ledState;
+   // digitalWrite(LEDB, ledState ? HIGH : LOW);
 
   delay(1000);
 }
