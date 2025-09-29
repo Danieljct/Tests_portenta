@@ -11,7 +11,11 @@
 // Pines y configuración I2C
 #define I2C3_SCL    D12
 #define I2C3_SDA    D11
+
+#ifndef DEV_I2C_DEFINED
+#define DEV_I2C_DEFINED
 static TwoWire dev_i2c(I2C3_SDA, I2C3_SCL);
+#endif
 
 // Direcciones y registros I2C del sensor
 const int SENSOR_I2C_ADDRESS_UNPROTECTED = 0x6C;
@@ -40,6 +44,29 @@ inline void SM_4000_readAnalog() {
     Serial.print("Presion: ");
     Serial.print(Presion, 3);
     Serial.println(" kPa  ");
+}
+
+inline float SM_4000_readI2C_pressure() {
+    dev_i2c.beginTransmission(SENSOR_I2C_ADDRESS_UNPROTECTED);
+    dev_i2c.write(PRESS_REG_ADDR); // Dirección de inicio (0x30)
+    dev_i2c.endTransmission(false); // Mantener la conexión abierta para la lectura
+
+    dev_i2c.requestFrom(SENSOR_I2C_ADDRESS_UNPROTECTED, 2);
+
+    if (dev_i2c.available() == 2) {
+        byte pressLo = dev_i2c.read();
+        byte pressHi = dev_i2c.read();
+
+        int rawPressure = (pressHi << 8) | pressLo;
+        
+        // Convertir valor raw a presión en kPa (ajustar según calibración del sensor)
+        // Asumiendo rango de 0-172 kPa y 16 bits de resolución
+        float pressure_kPa = ((float)rawPressure / 65535.0) * 172.0;
+        
+        return pressure_kPa * 10.0; // Convertir a mbar
+    } else {
+        return -1.0; // Error en la lectura
+    }
 }
 
 inline void SM_4000_readI2C() {

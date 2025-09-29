@@ -20,8 +20,10 @@ const float T_MAX = 150.0;   // Temperatura máxima en grados C
 
 // Buffer para almacenar los 4 bytes leídos del sensor
 static byte sensorData[4];
+#ifndef DEV_I2C_DEFINED
+#define DEV_I2C_DEFINED
 static TwoWire dev_i2c(I2C3_SDA, I2C3_SCL);
-
+#endif
 inline void sensorELV_begin() {
     dev_i2c.begin();
 }

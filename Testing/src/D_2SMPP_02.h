@@ -2,6 +2,7 @@
 
 #define P_2SMPP_02  A2
 #define N_2SMPP_02  A1
+#define VDD         3.3     // Voltaje de alimentación del sensor
 
 const float V_OFFSET_MV_02 = -2.5;   // Voltaje de offset en mV
 const float P_SPAN_02 = 37.0;     // Rango de presión total (P_MAX - P_MIN)
