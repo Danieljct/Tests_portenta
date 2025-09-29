@@ -9,10 +9,12 @@
 | **SM4291-HGE-S-500-000** | ✅ | I2C (0x6D) + Analógico | 0 a 172 kPa | -20 a 85°C | 16 bits (I2C) | ±1% FS (A) / ±1.5% FS (D) | 2 kHz |
 | **2SMPP-02** | ⚠️ | Analógico | 0 a 37 kPa | 0 a 50°C | Analógico | 0.8% FS | N/A |
 | **2SMPP-03** | ⚠️ | Analógico | ±50 kPa | 0 a 85°C | Analógico | ±0.8% FS | N/A |
+| **ABPLLNV600MG0S3** | 🔄 | I2C (0x08) | 0 a 60 kPa | 0 a 50°C | 14 bits | ±1.5% FS | 2 kHz |
 
 **Leyenda:**
 - ✅ **Funcionando:** Sensor probado y operativo
 - ⚠️ **Parcialmente funcional:** Requiere ajustes o presenta limitaciones
+- 🔄 **En evaluación:** Estado por determinar
 - **FS:** Full Scale (Escala completa)
 - **A:** Analógico, **D:** Digital
 
@@ -211,6 +213,38 @@
 
 ---
 
+## 🔧 ABPLLNV600MG0S3
+
+**Estado:** 🔄 **En evaluación**
+
+**Protocolo:** I2C
+
+**Dirección I2C:** 0x08
+
+### 📌 Pinout:
+*Referencia: Pin 1 diagonal*
+
+| Pin | Función | Descripción |
+|-----|---------|-------------|
+| 1 | GND | Tierra |
+| 2 | Vs | Alimentación |
+| 3 | INT | Interrupción |
+| 4 | NC | No conectar |
+| 5 | SDA | Serial Data |
+| 6 | SCL | Serial Clock |
+
+### 📊 Especificaciones Técnicas:
+- **Temperatura:** 0 a 50°C (calibrado)
+- **Rango de presión:** 0 a 60 kPa (0 a 600 mbar, gauge)
+- **Resolución:** 14 bits reales (10 a 90%)
+- **Precisión:** ±1.5% FS
+- **Frecuencia de muestreo:** 2 kHz
+
+### 📚 Documentación:
+- **Hoja de datos:** [Basic Board Mount Pressure Sensors ABP Series](HWSC-S-A0013047928-1.pdf)
+
+---
+
 ## 📚 Documentación Adicional
 
 ### Otros Datasheets Disponibles:
@@ -224,7 +258,7 @@
 1. **ELVH-015D-HAND-C-P2A4:** ±0.5% FS
 2. **2SMPP-02/03:** ±0.8% FS
 3. **SM4291 (Analógico):** ±1% FS
-4. **SM4291 (Digital):** ±1.5% FS
+4. **SM4291 (Digital) / ABPLLNV600MG0S3:** ±1.5% FS
 5. **SSCDANN600MDSA3-ND:** ±2% FS
 
 ### Mayor Rango de Presión:
@@ -232,11 +266,12 @@
 2. **SM4291-HGE-S-500-000:** 172 kPa
 3. **SSCDANN600MDSA3-ND:** 120 kPa (rango total)
 4. **2SMPP-03:** 100 kPa (rango total)
-5. **2SMPP-02:** 37 kPa
+5. **ABPLLNV600MG0S3:** 60 kPa
+6. **2SMPP-02:** 37 kPa
 
 ### Mayor Resolución:
 1. **SM4291 (I2C):** 16 bits
-2. **ELVH-015D-HAND-C-P2A4:** 14 bits
+2. **ELVH-015D-HAND-C-P2A4 / ABPLLNV600MG0S3:** 14 bits
 3. **SSCDANN600MDSA3-ND:** 12 bits
 4. **2SMPP-02/03:** Analógico (limitado por ADC)
 

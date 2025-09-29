@@ -170,6 +170,36 @@ fs: 2000 hz
 
 ---
 
+## ABPLLNV600MG0S3
+
+
+
+**Estado:** 
+
+**Protocolo:** I2C 0x08
+
+**Referencia de pinout:** 
+
+### Pinout: pin 1 diagonal
+
+1. GND
+2. Vs
+3. INT
+4. NC
+5. SDA
+6. SCL
+
+
+temp: calibrado a 0 a 50°C<br>
+Gage: 0 bar to 600 mbar <br>
+resolucion: 14 bits reales (10 a 90%) <br> 
+error band: ±1.5% FSS <br>
+fs: 2khz
+
+**Hoja de datos:** [Basic Board Mount Pressure Sensors ABP Series](HWSC-S-A0013047928-1.pdf)
+
+
+
 ## Documentación Adicional
 
 ### Otros Datasheets Disponibles:

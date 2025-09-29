@@ -1,27 +1,37 @@
 #include <Arduino.h>
-#include "sensor_elv.h"
 #include "window_analysis.h"
+#include "ABPLLN.h"
 
 void setup() {
   Serial.begin(115200);
   while (!Serial);
-  Serial.println("Presion, curtosis");
+  
+  Serial.println("=== SISTEMA DE LECTURA DE PRESIÓN ===");
+  
   bootM4();
-  sensorELV_begin();
 
   pinMode(LEDR, OUTPUT);
   pinMode(LEDG, OUTPUT);
   pinMode(LEDB, OUTPUT);
   setLed(LED_OFF);
+  
+  // Inicializar sensor de presión
+  initPressureSensor();
 }
 
 void loop() {
-  int pressure = sensorELV_read();
-  addSampleToWindow(pressure);
-
-  Serial.print(pressure_raw_to_pressure_mbar(pressure), 4); Serial.print(", ");
+  static unsigned long lastReading = 0;
   
-  processWindowAnalysis();
-
+  unsigned long now = millis();
+  
+  // Lectura cada 20ms
+  if (now - lastReading >= 20) {
+    if (readPressureSensor()) {
+      Serial.print(currentPressure, 2);
+      Serial.println(" mbar");
+    }
+    lastReading = now;
+  }
+  
   delay(10);
 }
