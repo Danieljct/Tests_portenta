@@ -23,6 +23,18 @@ const int TEMP_REG_ADDR = 0x2E;   // Dirección para leer la temperatura
 const int PRESS_REG_ADDR = 0x30;  // Dirección para leer la presión
 const int STATUS_REG_ADDR = 0x32; // Dirección para leer el estado
 
+
+// Valores de calibración del datasheet (0 a -500 mBar)
+const float RAW_MIN = -26214.0; 
+const float RAW_MAX = 26214.0;
+const float P_MIN_MBAR = 0.0;
+const float P_MAX_MBAR = -500.0;
+const float RAW_SPAN = RAW_MAX - RAW_MIN; // 52428.0
+const float P_SPAN_MBAR = P_MAX_MBAR - P_MIN_MBAR; // -500.0
+
+
+
+
 inline void SM_4000_begin() {
     dev_i2c.begin();
     //analogReadResolution(16); // Descomenta si tu plataforma lo requiere
@@ -57,13 +69,13 @@ inline float SM_4000_readI2C_pressure() {
         byte pressLo = dev_i2c.read();
         byte pressHi = dev_i2c.read();
 
-        int rawPressure = (pressHi << 8) | pressLo;
-        
-        // Convertir valor raw a presión en kPa (ajustar según calibración del sensor)
-        // Asumiendo rango de 0-172 kPa y 16 bits de resolución
-        float pressure_kPa = ((float)rawPressure / 65535.0) * 172.0;
-        
-        return pressure_kPa * 10.0; // Convertir a mbar
+        // Interpreta el valor como entero de 16 bits en complemento a 2
+        int16_t rawPressure = (int16_t)((pressHi << 8) | pressLo);
+
+        // Puedes convertir a presión física aquí si lo necesitas:
+         float pressure_mbar = ((float)rawPressure - RAW_MIN) * P_SPAN_MBAR / RAW_SPAN + P_MIN_MBAR;
+
+        return pressure_mbar; // O retorna pressure_mbar si quieres la presión física
     } else {
         return -1.0; // Error en la lectura
     }
