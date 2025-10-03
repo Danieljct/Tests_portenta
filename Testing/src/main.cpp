@@ -3,12 +3,14 @@
 #include "ABPLLN.h"
 #include "sensor_elv.h"
 #include "SM_4000.h"
+#include "CCDANN600MDSA3.h"
 
 // Enum para los estados de sensores
 enum SensorState {
   SENSOR_ABPLLN = 0,
   SENSOR_ELV = 1,
-  SENSOR_SM4291 = 2
+  SENSOR_SM4291 = 2,
+  SENSOR_CCDANN600 = 3
 };
 
 // Variables para control del botón y toggle
@@ -37,7 +39,7 @@ void setup() {
   initPressureSensor(); // ABPLLN
   sensorELV_begin();    // ELV
   SM_4000_begin();      // SM4291 (usando SM_4000)
-  
+  CCDANN600MDSA3_begin();
   sensorELV_scan();    // Escanear dispositivos I2C3
 
   Serial.println("Presiona el botón para cambiar entre sensores");
@@ -56,7 +58,7 @@ void checkButton() {
       currentButtonState = reading;
       
       if (currentButtonState == LOW) { // Botón presionado
-        currentSensor = (SensorState)((currentSensor + 1) % 3);
+        currentSensor = (SensorState)((currentSensor + 1) % 4);
         Serial.println("=== CAMBIO DE SENSOR ===");
         switch (currentSensor) {
           case SENSOR_ABPLLN:
@@ -68,6 +70,9 @@ void checkButton() {
           case SENSOR_SM4291:
             Serial.println("Modo: SM4291");
             break;
+          case SENSOR_CCDANN600:
+            Serial.println("Modo: CCDANN600MDSA3");
+            break;
         }
         Serial.println("========================");
       }
@@ -78,6 +83,9 @@ void checkButton() {
 }
 
 void loop() {
+
+
+
   static unsigned long lastReading = 0;
   
   unsigned long now = millis();
@@ -119,6 +127,16 @@ void loop() {
             Serial.print(pressureMbar, 2);
             Serial.println(" mbar");
           }
+        }
+        break;
+        
+      case SENSOR_CCDANN600:
+        // Leer sensor CCDANN600MDSA3
+        {
+          float pressureMbar = CCDANN600MDSA3_read();
+          Serial.print("CCDANN600: ");
+          Serial.print(pressureMbar, 2);
+          Serial.println(" mbar");
         }
         break;
     }

@@ -10,8 +10,8 @@
 // Constantes del sensor (ajusta si tu modelo es diferente)
 constexpr float CCDANN600MDSA3_P_MIN = -600.0; // mbar
 constexpr float CCDANN600MDSA3_P_MAX = 600.0;  // mbar
-constexpr int CCDANN600MDSA3_OUTPUT_MIN = 1638;   // 10% de 2^12
-constexpr int CCDANN600MDSA3_OUTPUT_MAX = 14745;  // 90% de 2^12
+constexpr float CCDANN600MDSA3_OUTPUT_MIN = 409.6;   // 10% de 2^12
+constexpr float CCDANN600MDSA3_OUTPUT_MAX = 3686.4;  // 90% de 2^12
 
 inline void CCDANN600MDSA3_begin() {
     pinMode(CCDANN600MDSA3_CS_PIN, OUTPUT);
@@ -19,7 +19,7 @@ inline void CCDANN600MDSA3_begin() {
     SPI.begin();
 }
 
-inline void CCDANN600MDSA3_read() {
+inline float CCDANN600MDSA3_read() {
     SPI.beginTransaction(SPISettings(750000, MSBFIRST, SPI_MODE3));
     digitalWrite(CCDANN600MDSA3_CS_PIN, LOW);
     delayMicroseconds(2); // tCSS típico
@@ -39,16 +39,5 @@ inline void CCDANN600MDSA3_read() {
     float pressure = ((float)raw - CCDANN600MDSA3_OUTPUT_MIN) * (CCDANN600MDSA3_P_MAX - CCDANN600MDSA3_P_MIN) /
                      (CCDANN600MDSA3_OUTPUT_MAX - CCDANN600MDSA3_OUTPUT_MIN) + CCDANN600MDSA3_P_MIN;
 
-    Serial.print("Status: ");
-    switch (status) {
-        case 0: Serial.print("OK"); break;
-        case 1: Serial.print("Comando"); break;
-        case 2: Serial.print("Obsoleto"); break;
-        case 3: Serial.print("Error"); break;
-    }
-    Serial.print(" | Raw: ");
-    Serial.print(raw);
-    Serial.print(" | Presion: ");
-    Serial.print(pressure, 2);
-    Serial.println(" mbar");
+    return pressure;
 }
