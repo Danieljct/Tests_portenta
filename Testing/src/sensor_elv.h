@@ -11,8 +11,8 @@ const int OUTPUT_MIN = 1638;  // 10% del rango de 14 bits (2^14 * 0.10)
 const int OUTPUT_MAX = 14745; // 90% del rango de 14 bits (2^14 * 0.90)
 
 // Rango de presión del sensor (ajusta según tu modelo ELVH-015D)
-const float P_MIN = -1.0;    // Presión mínima en bares
-const float P_MAX = 1.0;     // Presión máxima en bares
+const float P_MIN = -1.03;    // Presión mínima en bares
+const float P_MAX = 1.03;     // Presión máxima en bares
 
 // Rango de temperatura del sensor
 const float T_MIN = -50.0;   // Temperatura mínima en grados C
