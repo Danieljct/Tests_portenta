@@ -2,8 +2,7 @@
 #include <Wire.h>
 
 // Pines y configuración analógica
-#define P_2SMPP_02  A2
-#define N_2SMPP_02  A1
+#define analogPin  A0
 #define VDD         3.3
 #define V_offset    -2.5
 #define pendiente   0.8378 // V/kPa
@@ -37,25 +36,29 @@ const float P_SPAN_MBAR = P_MAX_MBAR - P_MIN_MBAR; // -500.0
 
 inline void SM_4000_begin() {
     dev_i2c.begin();
-    //analogReadResolution(16); // Descomenta si tu plataforma lo requiere
+    analogReadResolution(16); // Habilitar resolución de 16 bits
 }
 
-inline void SM_4000_readAnalog() {
-    int rawVoutPos = analogRead(P_2SMPP_02);
-    int rawVoutNeg = analogRead(N_2SMPP_02);
+inline float SM_4000_readAnalog() {
+    int rawVout = analogRead(analogPin);
 
-    float vOutPos = (float)rawVoutPos / 65535.0 * VDD;
-    float vOutNeg = (float)rawVoutNeg / 65535.0 * VDD;
-    float vOutDiff = vOutPos - vOutNeg;
+    // El sensor entrega 10-90% de VDD para el rango de presión (0 a -500 mbar)
+    // Convertimos la lectura analógica (0-65535) a voltaje
+    float vOut = (rawVout / 65535.0) * VDD;
 
-    Serial.print("Voltaje Diferencial: ");
-    Serial.print(vOutDiff * 1000.0, 3); // mV
-    Serial.print(" mV | ");
+    // El rango útil es de 10% a 90% de VDD
+    float vMin = 0.10 * VDD;
+    float vMax = 0.90 * VDD;
 
-    float Presion = (vOutDiff - V_offset)/pendiente;
-    Serial.print("Presion: ");
-    Serial.print(Presion, 3);
-    Serial.println(" kPa  ");
+    // Convertimos el voltaje a presión (mbar)
+    float pressure_mbar = (vOut - vMin) * (-500 / (vMax - vMin));
+
+    // Limitamos la presión al rango físico
+    if (pressure_mbar > 0) pressure_mbar = 0;
+    if (pressure_mbar < -500) pressure_mbar = -500.0;
+
+    // Retornar presión en mbar
+    return pressure_mbar;
 }
 
 inline float SM_4000_readI2C_pressure() {

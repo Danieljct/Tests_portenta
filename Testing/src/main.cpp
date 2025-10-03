@@ -10,7 +10,8 @@ enum SensorState {
   SENSOR_ABPLLN = 0,
   SENSOR_ELV = 1,
   SENSOR_SM4291 = 2,
-  SENSOR_CCDANN600 = 3
+  SENSOR_SM4000_ANALOG = 3,
+  SENSOR_CCDANN600 = 4
 };
 
 // Variables para control del botón y toggle
@@ -58,7 +59,7 @@ void checkButton() {
       currentButtonState = reading;
       
       if (currentButtonState == LOW) { // Botón presionado
-        currentSensor = (SensorState)((currentSensor + 1) % 4);
+        currentSensor = (SensorState)((currentSensor + 1) % 5);
         Serial.println("=== CAMBIO DE SENSOR ===");
         switch (currentSensor) {
           case SENSOR_ABPLLN:
@@ -72,6 +73,9 @@ void checkButton() {
             break;
           case SENSOR_CCDANN600:
             Serial.println("Modo: CCDANN600MDSA3");
+            break;
+          case SENSOR_SM4000_ANALOG:
+            Serial.println("Modo: SM4000 Analógico");
             break;
         }
         Serial.println("========================");
@@ -135,6 +139,16 @@ void loop() {
         {
           float pressureMbar = CCDANN600MDSA3_read();
           Serial.print("CCDANN600: ");
+          Serial.print(pressureMbar, 2);
+          Serial.println(" mbar");
+        }
+        break;
+        
+      case SENSOR_SM4000_ANALOG:
+        // Leer sensor SM4000 analógico
+        {
+          float pressureMbar = SM_4000_readAnalog();
+          Serial.print("SM4000 Analógico: ");
           Serial.print(pressureMbar, 2);
           Serial.println(" mbar");
         }

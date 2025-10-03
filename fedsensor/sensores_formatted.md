@@ -6,7 +6,7 @@
 |--------|--------|-----------|------------------|-------------|------------|-----------|------------|----------------|---------------|
 | **[SSCDANN600MDSA3-ND](#-sscdann600mdsa3-nd)** | ✅ | SPI | ±60 kPa | -20 a 85°C | 12 bits | ±2% FS | ~2.17 kHz | ![SSCDANN600MDSA3-ND Superior](img/SSCDANN_up.png) | ![SSCDANN600MDSA3-ND Lateral](img/SSCDANN_side.png) |
 | **[ELVH-015D-HAND-C-P2A4](#-elvh-015d-hand-c-p2a4)** | ✅ | I2C (0x28) | ±103 kPa | 0 a 50°C | 14 bits | ±0.5% FS | ~2.17 kHz | ![ELVH-015D-HAND-C-P2A4 Superior](img/ELV_up.png) | ![ELVH-015D-HAND-C-P2A4 Lateral](img/ELV_side.png) |
-| **[SM4291-HGE-S-500-000](#-sm4291-hge-s-500-000)** | 🔄 | I2C (0x6D) + Analógico | 0 a 172 kPa ⚠️ | -20 a 85°C | 16 bits (I2C) | ±1% FS (A) / ±1.5% FS (D) | 2 kHz | ![SM4291-HGE-S-500-000 Superior](img/sm4000_up.png) | ![SM4291-HGE-S-500-000 Lateral](img/sm4000_side.png) |
+| **[SM4291-HGE-S-500-000](#-sm4291-hge-s-500-000)** | 🔄 | I2C (0x6D) + Analógico | 0 a -50 kPa ⚠️ | -20 a 85°C | 16 bits (I2C) | ±1% FS (A) / ±1.5% FS (D) | 2 kHz | ![SM4291-HGE-S-500-000 Superior](img/sm4000_up.png) | ![SM4291-HGE-S-500-000 Lateral](img/sm4000_side.png) |
 | **[2SMPP-02](#-2smpp-02)** | ⚠️ | Analógico | 0 a 37 kPa | 0 a 50°C | Analógico | 0.8% FS | N/A | ![2SMPP-02 Superior](img/D_2SMPP_02_up.png) | ![2SMPP-02 Lateral](img/D_2SMPP_02_side.png) |
 | **[2SMPP-03](#-2smpp-03)** | ⚠️ | Analógico | ±50 kPa | 0 a 85°C | Analógico | ±0.8% FS | N/A | ![2SMPP-03 Superior](img/D_2SMPP_03_up.png) | ![2SMPP-03 Lateral](img/D_2SMPP_03_side.png) |
 | **[ABPLLNV600MG0S3](#-abpllnv600mg0s3)** | ✅ | I2C (0x08) | 0 a 60 kPa | 0 a 50°C | 14 bits | ±1.5% FS | 2 kHz | ![ABPLLNV600MG0S3 Superior](img/ABPLLN_up.png) | ![ABPLLNV600MG0S3 Lateral](img/ABPLLN_side.jpg) |
@@ -104,7 +104,7 @@
 
 ### 📊 Especificaciones Técnicas:
 - **Temperatura:** -20 a 85°C
-- **Rango de presión:** 0 a 172 kPa (25 psi)
+- **Rango de presión:** 0 a -500 mbar
 - **Resolución:** 16 bits (I2C), 10-90% Vdc (analógico)
 - **Precisión:** 
   - Digital: ±1.5% FS
