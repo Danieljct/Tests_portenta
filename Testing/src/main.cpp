@@ -1,15 +1,16 @@
 #include <Arduino.h>
-#include <mbed.h>
-#include <rtos.h>
+#include <arduinoFFT.h>
 #include "window_analysis.h"
 #include "ABPLLN.h"
 #include "sensor_elv.h"
 #include "SM_4000.h"
 #include "CCDANN600MDSA3.h"
 
-#define WAIT_TIME 500
+#define WAIT_TIME 500  // 500us para 2kHz
+#define FFT_SIZE 4096  
+#define SAMPLES_PER_SECOND 2000
 
-// Enum para los estados de sensores
+// Enum para los sensores
 enum SensorState {
   SENSOR_ABPLLN = 0,
   SENSOR_ELV = 1,
@@ -17,7 +18,7 @@ enum SensorState {
   SENSOR_CCDANN600 = 3
 };
 
-// Variables para control del botón y toggle
+// Variables globales
 SensorState currentSensor = SENSOR_ABPLLN;
 bool lastButtonState = HIGH;
 bool currentButtonState = HIGH;
@@ -25,159 +26,88 @@ unsigned long lastDebounceTime = 0;
 const unsigned long debounceDelay = 50;
 #define BTN PC_7
 
-// Estructuras para almacenar las lecturas de cada sensor
-struct SensorData {
-  float pressure;
-  uint32_t timestamp;
-  bool valid;
-};
+// Buffer para FFT
+float buffer[FFT_SIZE];
+uint16_t bufferIndex = 0;
+bool bufferFull = false;
 
-// Variables globales para los datos de cada sensor
-SensorData abplln_data = {0.0, 0, false};
-SensorData elv_data = {0.0, 0, false};
-SensorData sm4291_data = {0.0, 0, false};
-SensorData ccdann600_data = {0.0, 0, false};
+// Variables para FFT
+float vReal[FFT_SIZE];
+float vImag[FFT_SIZE];
+ArduinoFFT<float> FFT = ArduinoFFT<float>(vReal, vImag, FFT_SIZE, SAMPLES_PER_SECOND);
 
-// Mutexes para proteger acceso a los datos
-rtos::Mutex abplln_mutex;
-rtos::Mutex elv_mutex;
-rtos::Mutex sm4291_mutex;
-rtos::Mutex ccdann600_mutex;
-rtos::Mutex serial_mutex;
+// Función para leer el sensor actual
+float readCurrentSensor() {
+  float pressure = 0.0;
+  
+  switch (currentSensor) {
+    case SENSOR_ABPLLN:
+      if (readPressureSensor()) {
+        pressure = currentPressure;
+      }
+      break;
+      
+    case SENSOR_ELV:
+      {
+        int pressureRaw = sensorELV_read(false, false);
+        if (!isnan(pressureRaw)) {
+          pressure = pressure_raw_to_pressure_mbar(pressureRaw) * 1000;
+        }
+      }
+      break;
+      
+    case SENSOR_SM4291:
+      {
+        float pressureMbar = SM_4000_readI2C_pressure();
+        if (pressureMbar != -1.0) {
+          pressure = pressureMbar;
+        }
+      }
+      break;
+      
+    case SENSOR_CCDANN600:
+      pressure = CCDANN600MDSA3_read();
+      break;
+  }
+  
+  return pressure;
+}
 
-// Threads para cada sensor
-rtos::Thread abplln_thread;
-rtos::Thread elv_thread;
-rtos::Thread sm4291_thread;
-rtos::Thread ccdann600_thread;
-
-// Funciones de los threads para cada sensor
-
-// Thread para sensor ABPLLN - 2kHz (500us entre lecturas)
-void abplln_thread_function() {
-  while (true) {
-    SensorData data;
-    data.timestamp = millis();
-    
-    if (readPressureSensor()) {
-      data.pressure = currentPressure;
-      data.valid = true;
-    } else {
-      data.valid = false;
-    }
-    
-    // Actualizar datos protegido por mutex
-    abplln_mutex.lock();
-    abplln_data = data;
-    abplln_mutex.unlock();
-    
-    // Esperar 500us para conseguir 2kHz
-    wait_us(WAIT_TIME);
+// Función para agregar muestra al buffer
+void addSample(float sample) {
+  buffer[bufferIndex] = sample;
+  bufferIndex++;
+  
+  if (bufferIndex >= FFT_SIZE) {
+    bufferIndex = 0;
+    bufferFull = true;
   }
 }
 
-// Thread para sensor ELV - 2kHz (500us entre lecturas)
-void elv_thread_function() {
-  while (true) {
-    SensorData data;
-    data.timestamp = millis();
-    
-    int pressureRaw = sensorELV_read(false, false);
-    if (!isnan(pressureRaw)) {
-      data.pressure = pressure_raw_to_pressure_mbar(pressureRaw) * 1000;
-      data.valid = true;
-    } else {
-      data.valid = false;
-    }
-    
-    // Actualizar datos protegido por mutex
-    elv_mutex.lock();
-    elv_data = data;
-    elv_mutex.unlock();
-    
-    // Esperar 500us para conseguir 2kHz
-    wait_us(WAIT_TIME);
+// Función para calcular y imprimir FFT
+void calculateAndPrintFFT() {
+  if (!bufferFull) {
+    return;
+  }
+  
+  // Copiar datos al array de FFT
+  for (int i = 0; i < FFT_SIZE; i++) {
+    vReal[i] = buffer[i];
+    vImag[i] = 0.0;
+  }
+  
+  // Calcular FFT
+  FFT.windowing(FFTWindow::Hamming, FFTDirection::Forward);
+  FFT.compute(FFTDirection::Forward);
+  FFT.complexToMagnitude();
+  
+  // Imprimir solo los bins útiles (FFT_SIZE/2)
+  for (int i = 0; i < FFT_SIZE/2; i++) {
+    Serial.println(vReal[i], 6);
   }
 }
 
-// Thread para sensor SM4291 - 2kHz (500us entre lecturas)
-void sm4291_thread_function() {
-  while (true) {
-    SensorData data;
-    data.timestamp = millis();
-    
-    float pressureMbar = SM_4000_readI2C_pressure();
-    if (pressureMbar != -1.0) {
-      data.pressure = pressureMbar;
-      data.valid = true;
-    } else {
-      data.valid = false;
-    }
-    
-    // Actualizar datos protegido por mutex
-    sm4291_mutex.lock();
-    sm4291_data = data;
-    sm4291_mutex.unlock();
-    
-    // Esperar 500us para conseguir 2kHz
-    wait_us(WAIT_TIME);
-  }
-}
-
-// Thread para sensor CCDANN600 - 2kHz (500us entre lecturas)
-void ccdann600_thread_function() {
-  while (true) {
-    SensorData data;
-    data.timestamp = millis();
-    
-    data.pressure = CCDANN600MDSA3_read();
-    data.valid = true; // Este sensor siempre devuelve un valor
-    
-    // Actualizar datos protegido por mutex
-    ccdann600_mutex.lock();
-    ccdann600_data = data;
-    ccdann600_mutex.unlock();
-    
-    // Esperar 500us para conseguir 2kHz
-    wait_us(WAIT_TIME);
-  }
-}
-
-void setup() {
-  Serial.begin(115200);
-  while (!Serial);
-  
-  Serial.println("=== SISTEMA DE LECTURA DE PRESIÓN MULTIHILO ===");
-  Serial.println("Usando mbedOS - 4 sensores a 2kHz cada uno");
-  
-  bootM4();
-
-  pinMode(LEDR, OUTPUT);
-  pinMode(LEDG, OUTPUT);
-  pinMode(LEDB, OUTPUT);
-  pinMode(BTN, INPUT_PULLDOWN);
-  setLed(LED_OFF);
-  
-  // Inicializar los cuatro sensores
-  initPressureSensor(); // ABPLLN
-  sensorELV_begin();    // ELV
-  SM_4000_begin();      // SM4291 (usando SM_4000)
-  CCDANN600MDSA3_begin(); // CCDANN600
-  sensorELV_scan();     // Escanear dispositivos I2C3
-
-  Serial.println("Inicializando threads de sensores...");
-  
-  // Iniciar los threads para cada sensor
-  abplln_thread.start(abplln_thread_function);
-  elv_thread.start(elv_thread_function);
-  sm4291_thread.start(sm4291_thread_function);
-  ccdann600_thread.start(ccdann600_thread_function);
-  
-  Serial.println("Todos los threads iniciados exitosamente");
-  Serial.println("Mostrando los 4 sensores simultáneamente");
-  Serial.println("Presiona el botón para cambiar modo (funcionalidad futura)");
-}
-
+// Función para verificar el botón
 void checkButton() {
   int reading = digitalRead(BTN);
   
@@ -188,28 +118,32 @@ void checkButton() {
   if ((millis() - lastDebounceTime) > debounceDelay) {
     if (reading != currentButtonState) {
       currentButtonState = reading;
-      
-      if (currentButtonState == LOW) { // Botón presionado
+
+      if (currentButtonState == HIGH) { // Botón presionado
+        // Cambiar al siguiente sensor
         currentSensor = (SensorState)((currentSensor + 1) % 4);
         
-        serial_mutex.lock();
-        Serial.println("=== CAMBIO DE SENSOR ===");
+        // Limpiar buffer
+        bufferIndex = 0;
+        bufferFull = false;
+        memset(buffer, 0, sizeof(buffer));
+        
+        // Imprimir nombre del sensor actual
+        Serial.print("SENSOR:");
         switch (currentSensor) {
           case SENSOR_ABPLLN:
-            Serial.println("Modo: ABPLLN");
+            Serial.println("ABPLLN");
             break;
           case SENSOR_ELV:
-            Serial.println("Modo: ELV");
+            Serial.println("ELV");
             break;
           case SENSOR_SM4291:
-            Serial.println("Modo: SM4291");
+            Serial.println("SM4291");
             break;
           case SENSOR_CCDANN600:
-            Serial.println("Modo: CCDANN600MDSA3");
+            Serial.println("CCDANN600");
             break;
         }
-        Serial.println("========================");
-        serial_mutex.unlock();
       }
     }
   }
@@ -217,67 +151,53 @@ void checkButton() {
   lastButtonState = reading;
 }
 
+void setup() {
+  Serial.begin(115200);
+  while (!Serial);
+  
+  bootM4();
+  
+  pinMode(LEDR, OUTPUT);
+  pinMode(LEDG, OUTPUT);
+  pinMode(LEDB, OUTPUT);
+  pinMode(BTN, INPUT_PULLDOWN);
+  setLed(LED_OFF);
+  
+  // Inicializar sensores
+  initPressureSensor(); // ABPLLN
+  sensorELV_begin();    // ELV
+  SM_4000_begin();      // SM4291
+  CCDANN600MDSA3_begin(); // CCDANN600
+  sensorELV_scan();
+  
+  // Imprimir sensor inicial
+  Serial.println("SENSOR:ABPLLN");
+  
+  // Limpiar buffer
+  memset(buffer, 0, sizeof(buffer));
+  bufferIndex = 0;
+  bufferFull = false;
+}
+
 void loop() {
-  static unsigned long lastDisplay = 0;
-  unsigned long now = millis();
+  static unsigned long lastReading = 0;
+  unsigned long now = micros();
   
   // Verificar botón
   checkButton();
   
-  // Mostrar datos cada 100ms (10 Hz) para no saturar el serial
-  if (now - lastDisplay >= 100) {
-    SensorData abplln_local, elv_local, sm4291_local, ccdann600_local;
-    
-    // Leer todos los datos de forma thread-safe
-    abplln_mutex.lock();
-    abplln_local = abplln_data;
-    abplln_mutex.unlock();
-    
-    elv_mutex.lock();
-    elv_local = elv_data;
-    elv_mutex.unlock();
-    
-    sm4291_mutex.lock();
-    sm4291_local = sm4291_data;
-    sm4291_mutex.unlock();
-    
-    ccdann600_mutex.lock();
-    ccdann600_local = ccdann600_data;
-    ccdann600_mutex.unlock();
-    
-    // Imprimir todos los sensores en una línea de forma thread-safe
-    serial_mutex.lock();
-    Serial.print("ABPLLN:");
-    if (abplln_local.valid) {
-      Serial.print(abplln_local.pressure, 2);
-    } else {
-      Serial.print("---");
-    }
-    Serial.print(" | ELV:");
-    if (elv_local.valid) {
-      Serial.print(elv_local.pressure, 2);
-    } else {
-      Serial.print("---");
-    }
-    Serial.print(" | SM4291:");
-    if (sm4291_local.valid) {
-      Serial.print(sm4291_local.pressure, 2);
-    } else {
-      Serial.print("---");
-    }
-    Serial.print(" | CCDANN600:");
-    if (ccdann600_local.valid) {
-      Serial.print(ccdann600_local.pressure, 2);
-    } else {
-      Serial.print("---");
-    }
-    Serial.print(" mbar [");
-    Serial.print(now);
-    Serial.println(" ms]");
-    serial_mutex.unlock();
-    
-    lastDisplay = now;
+  // Leer sensor cada 500us (2kHz)
+  if (now - lastReading >= WAIT_TIME) {
+    float pressure = readCurrentSensor();
+    addSample(pressure);
+    lastReading = now;
   }
   
-  delay(10);
+  // Calcular e imprimir FFT cuando el buffer esté lleno
+  if (bufferFull) {
+    calculateAndPrintFFT();
+    // Resetear buffer para siguiente captura
+    bufferIndex = 0;
+    bufferFull = false;
+  }
 }
