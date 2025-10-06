@@ -11,7 +11,7 @@ void initPressureSensor() {
   Serial.println("Inicializando sensor de presión I2C...");
   
   Wire.begin();
-  Wire.setClock(100000); // 100kHz para mayor estabilidad
+  Wire.setClock(400000); // 400kHz
   
   // Verificar si el sensor responde
   Wire.beginTransmission(PRESSURE_SENSOR_ADDR);
