@@ -174,8 +174,8 @@ void setup() {
   ccdann600_thread.start(ccdann600_thread_function);
   
   Serial.println("Todos los threads iniciados exitosamente");
-  Serial.println("Presiona el botón para cambiar entre sensores en display");
-  Serial.println("Estado inicial: ABPLLN");
+  Serial.println("Mostrando los 4 sensores simultáneamente");
+  Serial.println("Presiona el botón para cambiar modo (funcionalidad futura)");
 }
 
 void checkButton() {
@@ -226,63 +226,55 @@ void loop() {
   
   // Mostrar datos cada 100ms (10 Hz) para no saturar el serial
   if (now - lastDisplay >= 100) {
-    SensorData data;
-    bool hasData = false;
+    SensorData abplln_local, elv_local, sm4291_local, ccdann600_local;
     
-    // Leer los datos del sensor seleccionado de forma thread-safe
-    switch (currentSensor) {
-      case SENSOR_ABPLLN:
-        abplln_mutex.lock();
-        data = abplln_data;
-        abplln_mutex.unlock();
-        hasData = data.valid;
-        break;
-        
-      case SENSOR_ELV:
-        elv_mutex.lock();
-        data = elv_data;
-        elv_mutex.unlock();
-        hasData = data.valid;
-        break;
-        
-      case SENSOR_SM4291:
-        sm4291_mutex.lock();
-        data = sm4291_data;
-        sm4291_mutex.unlock();
-        hasData = data.valid;
-        break;
-        
-      case SENSOR_CCDANN600:
-        ccdann600_mutex.lock();
-        data = ccdann600_data;
-        ccdann600_mutex.unlock();
-        hasData = data.valid;
-        break;
-    }
+    // Leer todos los datos de forma thread-safe
+    abplln_mutex.lock();
+    abplln_local = abplln_data;
+    abplln_mutex.unlock();
     
-    // Mostrar datos del sensor seleccionado de forma thread-safe
-    if (hasData) {
-      serial_mutex.lock();
-      switch (currentSensor) {
-        case SENSOR_ABPLLN:
-          Serial.print("ABPLLN: ");
-          break;
-        case SENSOR_ELV:
-          Serial.print("ELV: ");
-          break;
-        case SENSOR_SM4291:
-          Serial.print("SM4291: ");
-          break;
-        case SENSOR_CCDANN600:
-          Serial.print("CCDANN600: ");
-          break;
-      }
-      Serial.print(data.pressure, 2);
-      Serial.print(" mbar [");
-      Serial.print(data.timestamp);
-      Serial.println(" ms]");
-      serial_mutex.unlock();
+    elv_mutex.lock();
+    elv_local = elv_data;
+    elv_mutex.unlock();
+    
+    sm4291_mutex.lock();
+    sm4291_local = sm4291_data;
+    sm4291_mutex.unlock();
+    
+    ccdann600_mutex.lock();
+    ccdann600_local = ccdann600_data;
+    ccdann600_mutex.unlock();
+    
+    // Imprimir todos los sensores en una línea de forma thread-safe
+    serial_mutex.lock();
+    Serial.print("ABPLLN:");
+    if (abplln_local.valid) {
+      Serial.print(abplln_local.pressure, 2);
+    } else {
+      Serial.print("---");
     }
+    Serial.print(" | ELV:");
+    if (elv_local.valid) {
+      Serial.print(elv_local.pressure, 2);
+    } else {
+      Serial.print("---");
+    }
+    Serial.print(" | SM4291:");
+    if (sm4291_local.valid) {
+      Serial.print(sm4291_local.pressure, 2);
+    } else {
+      Serial.print("---");
+    }
+    Serial.print(" | CCDANN600:");
+    if (ccdann600_local.valid) {
+      Serial.print(ccdann600_local.pressure, 2);
+    } else {
+      Serial.print("---");
+    }
+    Serial.print(" mbar [");
+    Serial.print(now);
+    Serial.println(" ms]");
+    serial_mutex.unlock();
     
     lastDisplay = now;
   }
